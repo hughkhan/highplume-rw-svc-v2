@@ -1,11 +1,15 @@
 package com.highplume.service;
 
+import org.eclipse.persistence.config.CacheIsolationType;
+
 import javax.persistence.*;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.util.Objects;
 
+
 @Entity
 //@Cacheable(false)
+@org.eclipse.persistence.annotations.Cache(isolation= CacheIsolationType.ISOLATED)
 @IdClass(CorpUserPK.class)
 @XmlRootElement
 @NamedQueries({

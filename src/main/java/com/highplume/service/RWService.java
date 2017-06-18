@@ -47,15 +47,27 @@ public class RWService {
   @Context
   private UriInfo uriInfo;
 
-  String logFile = "highplumeRWService.log";
-  String logTrigger = "highplumelog.trigger";
+  String prefix = "RW-";    //logFile = "RW-highplumeService.log";
 
   // ======================================
   // =           Public Methods           =
   // ======================================
 
 
-    /*------------------------*/
+    /*-----------------------------*/
+
+	public void log (String output){
+		Util.log(prefix, output);
+	}
+
+    /*-----------------------------*/
+
+	public void log (String output, int logLevel){
+		Util.log(prefix, output, logLevel);
+	}
+
+    /*-----------------------------*/
+
 	
 /*
 -------Case insensitive index--------------
@@ -90,94 +102,6 @@ LANGUAGE plpgsql;
 select get_avg('1');
 ------run stored procedure------------
 
-getAllUsersByCorp
-_usersByDept
-getAllUsersByDept
-getdDeptUserData
-getAvgGiving
-getGivers
-getReceivers
-msds
-_receiverTotalsPerDept
-_giverTotalsPerDept
-IdUserNameValue
-_getUserDecile
-_getPercentRank
-_giverValuesRanking
-_ReceiverValuesRanking
-getCorpvalues
-getInfluence
-_deptGiverTotals
-_deptRecTotals
-getDeptTotals
-getStars
-test
-addQualities()
-addQualities
-initDB
-getQualities
-getQualitiesComposite
-qualityProfile
-quality
-giveStar
-addMember
-changePwd
-inactiveUser
-changeUserDept
-userInfo
-loginMember
-_deptByCorp
-getDeptByCorp
-GetCorpID
-validateEmailP
-validateEmail
-sendMailTLS
-
-
-
-
-members
-users
-usersbycorp/{corpID}
-usersbydept/{corpID}/{departmentID}
-deptuserdata/{corpID}
-giver/{corpID}/{receiverID}
-receivers/{corpID}/{giverID}
-    _msds (double[] x, int n)
-     _receiverTotalsPerDept(String corpID, String UserID)
-     _giverTotalsPerDept(String corpID, String UserID)
-     IdUserNameValue _getUserDecile(java.util.ArrayList<IdUserNameValue> userArray, String userID)
-
-influence/{corpID}/{gr}/{wl}/{userID: .*}
-influence/{corpID}/{wl}/{userID: .*}
-    _deptGiverTotals(String corpID)
-    _deptRecTotals(String corpID)
-depttotals/{corpID}
-getstars/{corpID}/{givingOrReceiving}
-test
-initdb
-givestar/{givingMemberID}/{receivingMemberID}
-addmember
-changepwd
-userinfo
-login -POST
-    _deptByCorp(String corpID)
-getdeptbycorp
-getcorpid
-validateemailp
-validateemail
-sendmailtls
-*/
-
-    /*------------------------*/
-
-    /*------------------------*/
-
-    /*------------------------*/
-
-
-
-
 /*    @GET
     @Path("test")
     @Produces("application/json")
@@ -193,74 +117,9 @@ sendmailtls
     return retStr;*/
 
 
-
-/*
-IdUserNameValue test = new IdUserNameValue();
-
-test.setId("1");
-
-
-        IdUserNameValue[] Sorted = new IdUserNameValue[3];
-
-            Sorted[0] = new IdUserNameValue();
-            Sorted[0].setId("1");
-            Sorted[0].setNameFirst("Henry");
-            Sorted[0].setNameMiddle("David");
-            Sorted[0].setNameLast("Thoreau");
-            Sorted[0].setValue(1.1);
-
-            Sorted[1] = new IdUserNameValue();
-            Sorted[1].setId("2");
-            Sorted[1].setNameFirst("Henry2");
-            Sorted[1].setNameMiddle("David2");
-            Sorted[1].setNameLast("Thoreau2");
-            Sorted[1].setValue(1.2);
-
-            Sorted[2] = new IdUserNameValue();
-            Sorted[2].setId("3");
-            Sorted[2].setNameFirst("Henry3");
-            Sorted[2].setNameMiddle("David3");
-            Sorted[2].setNameLast("Thoreau3");
-            Sorted[2].setValue(0.2);
-
-            Arrays.sort(Sorted);
-
-            return Sorted[0].getNameFirst()+
-                    Sorted[0].getValue()+
-
-                    Sorted[1].getNameFirst()+
-                    Sorted[1].getValue()+
-
-                    Sorted[2].getNameFirst()+
-                    Sorted[2].getValue();
-*/
-
-        /*
-        //Add Departments and Corporations
-        Corp corp = new Corp("Sierra Club", "http://www.sierraclub.org/");
-        em.persist(corp);
-        return ("corp="+corp.getName()+corp.getId()+corp.getWebsite());
-*/
-
-
-
-
-
-/*        return "{\"data\":  [" +
-        "        {\"a\": \"1The Lord of the Rings\", \"b\": \"J. R. R. Tolkien\"}," +
-        "        {\"a\": \"2Le Petit Prince (The Little Prince)\", \"b\": \"Antoine de Saint-Exupéry\"}," +
-        "        {\"a\": \"3Harry Potter and the Philosopher's Stone\", \"b\": \"J. K. Rowling\"}," +
-        "        {\"a\": \"4And Then There Were None\", \"b\": \"Agatha Christie\"}," +
-        "        {\"a\": \"5Dream of the Red Chamber\", \"b\": \"Cao Xueqin\"}," +
-        "        {\"a\": \"6The Hobbit\", \"b\": \"J. R. R. Tolkien\"}," +
-        "        {\"a\": \"7She: A History of Adventure\", \"b\": \"H. Rider Haggard\"}" +
-        "      ]}";
-    }*/
-
-
     /*--------------------------*/
 		
-    public void log (String output){
+/*    public void log (String output){
 		log(output, 0);
 	}
 		
@@ -290,7 +149,7 @@ test.setId("1");
                 e.printStackTrace();
             }
         }
-    }
+    }*/
 
     /*-------------------*/
 

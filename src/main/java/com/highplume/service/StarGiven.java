@@ -1,5 +1,8 @@
 package com.highplume.service;
 
+//import org.eclipse.persistence.annotations.*;
+import org.eclipse.persistence.config.CacheIsolationType;
+
 import javax.persistence.*;
 import java.util.Date;
 
@@ -7,7 +10,8 @@ import java.util.Date;
  * Created by Hugh on 7/13/2016.
  */
 @Entity
-@Cacheable(false)
+//@Cacheable(false)
+@org.eclipse.persistence.annotations.Cache(isolation=CacheIsolationType.ISOLATED)
 public class StarGiven {
 
     @Id
