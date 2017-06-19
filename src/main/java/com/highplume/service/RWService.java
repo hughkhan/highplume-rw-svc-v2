@@ -392,6 +392,7 @@ select get_avg('1');
         TU tuOpenness = new TU(nike1.getId(), openness.getId(),25);
         em.persist(tuOpenness);
 
+
     }
 
 
@@ -610,10 +611,15 @@ select get_avg('1');
 					return "ERROR";
 			}
         } catch (PersistenceException pe) {
+            log("qualityprofile: " + pe.getMessage());
             return "FAIL: " + pe.getMessage();
+        } catch (Exception e){
+            log("qualityprofile: " + e.getMessage());
+            return "Error: " + e.getMessage();
         }
         return "SUCCESS";
     }
+
   /*--------------------------*/
 
     @POST
@@ -689,10 +695,15 @@ select get_avg('1');
 					return "ERROR:BAD_QUALITYTYPEID";
 			}
         } catch (PersistenceException pe) {
+            log("quality: " + pe.getMessage());
             return "FAIL: " + pe.getMessage();
+        } catch (Exception e){
+            log("quality: " + e.getMessage());
+            return "Error: " + e.getMessage();
         }
         return "SUCCESS";
     }
+
   /*--------------------------*/
 
     @GET
@@ -727,8 +738,14 @@ select get_avg('1');
             em.persist(starGiven);
 
         } catch (PersistenceException pe) {
+            log("givestar: " + pe.getMessage());
             return Response.status(500)
                             .entity("<html lang=\"en\"><body><h1>  ERROR:  " + pe.getMessage() + "  </h1></body></html>\"")
+                            .build();
+        } catch (Exception e){
+            log("givestar: " + e.getMessage());
+            return Response.status(500)
+                            .entity("<html lang=\"en\"><body><h1>  ERROR:  " + e.getMessage() + "  </h1></body></html>\"")
                             .build();
         }
 
@@ -793,12 +810,16 @@ select get_avg('1');
 		return "SUCCESS";
 
     } catch (EntityExistsException pe) {
+        log("addmember: Duplicate Record: " + pe.getMessage());
         return  "Duplicate Record: " + pe.getMessage();
     } catch (PersistenceException pe) {
+        log("addmember: " + pe.getMessage());
         return  "Error: " + pe.getMessage();
     } catch (Encryption.CannotPerformOperationException ex) {
+        log("addmember: Encryption Failure" + ex.getMessage());
         return "Encryption Failure";
     } catch (Exception e) {
+        log("addmember: " + e.getMessage());
         return  "General Error: " + e.getMessage();
     }
   }
@@ -855,7 +876,11 @@ select get_avg('1');
                 return "ERROR:  wrong param or param missing";
 
         } catch (PersistenceException pe) {
+            log("userinfo: " + pe.getMessage());
             return "ERROR: " + pe.getMessage();
+        } catch (Exception e){
+            log("userinfo: " + e.getMessage());
+            return "Error: " + e.getMessage();
         }
     }
 
@@ -902,9 +927,14 @@ select get_avg('1');
             return "SUCCESS:"+(new String(encodedPWD));
 
         } catch (Encryption.CannotPerformOperationException|Encryption.InvalidHashException ex) {
+            log("changepwd: Encryption Failure" + ex.getMessage());
             return "FAIL: Encryption Failure";
         } catch (PersistenceException pe) {
+            log("changepwd: " + pe.getMessage());
             return "FAIL: " + pe.getMessage();
+        } catch (Exception e){
+            log("changepwd: " + e.getMessage());
+            return "Error: " + e.getMessage();
         }
     }
 
@@ -933,10 +963,14 @@ select get_avg('1');
             em.persist(member);
 
         } catch (PersistenceException pe) {
+            log("inactivateuser: " + pe.getMessage());
             return "FAIL: " + pe.getMessage();
+        } catch (Exception e){
+            log("inactivateuser: " + e.getMessage());
+            return "Error: " + e.getMessage();
         }
         return "SUCCESS";
-        }
+    }
 
  /*--------------------------*/
 
@@ -970,7 +1004,11 @@ select get_avg('1');
             em.persist(member);
 
         } catch (PersistenceException pe) {
+            log("changeuserdept: " + pe.getMessage());
             return "FAIL: " + pe.getMessage();
+        } catch (Exception e){
+            log("changeuserdept: " + e.getMessage());
+            return "Error: " + e.getMessage();
         }
         return "SUCCESS";
         }
@@ -1020,11 +1058,14 @@ select get_avg('1');
             }
 
         } catch (PersistenceException pe) {
+            log("deptadmin: " + pe.getMessage());
             return "FAIL: " + pe.getMessage();
+        } catch (Exception e){
+            log("deptadmin: " + e.getMessage());
+            return "Error: " + e.getMessage();
         }
         return "SUCCESS";
-        }
-
+    }
 
     /*--------------------------*/
 
@@ -1073,17 +1114,18 @@ select get_avg('1');
 
 
         } catch (NoResultException pe) {
+            log("login: NO RESULT: " + pe.getMessage());
             return "NO RESULT";
         } catch  (PersistenceException pe){
+            log("login: " + pe.getMessage());
             return "ERROR: " + pe.getMessage();
         } catch (Exception e){
+            log("login: " + e.getMessage());
             return "ERROR: " + e.getMessage();
         }
     }
 
-
     /*--------------------------*/
-
 
   @POST
   @Path("validateemailp")
@@ -1112,10 +1154,13 @@ select get_avg('1');
         else
             return "FAIL";
     } catch (NoResultException pe) {
+        log("validateemailp: NO RESULT: " + pe.getMessage());
         return "NO RESULT";
     } catch  (PersistenceException pe){
+        log("validateemailp: " + pe.getMessage());
         return "ERROR: " + pe.getMessage();
     } catch (Exception e){
+        log("validateemailp: " + e.getMessage());
         return "ERROR: " + e.getMessage();
     }
   }
@@ -1158,10 +1203,13 @@ select get_avg('1');
             return "FAIL"+encryptedPWD;*/
 
     } catch (NoResultException pe) {
+        log("validateemail: NO RESULT: " + pe.getMessage());
         return "NO RESULT";
     } catch  (PersistenceException pe){
+        log("validateemail: " + pe.getMessage());
         return "ERROR: " + pe.getMessage();
     } catch (Exception e){
+        log("validateemail: " + e.getMessage());
         return "ERROR: " + e.getMessage();
     }
   }
@@ -1234,10 +1282,15 @@ select get_avg('1');
 
 		} catch (MessagingException e) {
 //			throw new RuntimeException(e);
+            log("sendMailTLS: " + e.getMessage());
             return "ERROR:" + e.getMessage();
-		}
-
-
+        } catch  (PersistenceException pe){
+            log("sendMailTLS: " + pe.getMessage());
+            return "Error:" + pe.getMessage();
+        } catch (Exception e){
+            log("sendMailTLS: " + e.getMessage());
+            return "Error: " + e.getMessage();
+        }
   }
 
     /*--------------------------*/
@@ -1320,10 +1373,13 @@ select get_avg('1');
 		return corpAllowedURLs.getCorpID();
 
 	} catch (NoResultException pe) {
+            log("_getCorpIDFromUID: NO RESULT:" + pe.getMessage());
             return "NO RESULT";
     } catch  (PersistenceException pe){
+            log("_getCorpIDFromUID: " + pe.getMessage());
             return "ERROR: " + pe.getMessage();
     } catch (Exception e){
+            log("_getCorpIDFromUID: " + e.getMessage());
             return "ERROR: " + e.getMessage();
     }
   }
@@ -1337,15 +1393,20 @@ select get_avg('1');
 		return corp.getName();
 
 	} catch (NoResultException pe) {
+            log("_getCorpNameFromID: NO RESULT: " + pe.getMessage());
             return "ERROR: NO RESULT";
     } catch  (PersistenceException pe){
+            log("_getCorpNameFromID: " + pe.getMessage());
             return "ERROR: " + pe.getMessage();
     } catch (Exception e){
+            log("_getCorpNameFromID: " + e.getMessage());
             return "ERROR: " + e.getMessage();
     }
   }
 
 }
+
+
 
 /*
 
