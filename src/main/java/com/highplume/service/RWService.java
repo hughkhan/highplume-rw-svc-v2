@@ -1232,7 +1232,8 @@ select get_avg('1');
 //                    +reqChunk[3]+"\"> "
 //                    +reqChunk[2]+" via Highplume.com</a>";
 
-                    +corpName+" using Highplume. --> <a href=\"http://192.168.100.169/#/login?email="
+//                    +corpName+" using Highplume. --> <a href=\"http://192.168.100.169/#/login?email="
+                    +corpName+" using Highplume. --> <a href=\"https://www.highplume.com/#/login?email="
                     +reqChunk[0]+"&securecode="+reqChunk[3]+"\"> "
                     +corpName+" via Highplume.com</a><br><br>"
                     + "If this is not you, please ignore this email.  The registrant might have mistyped her/his email.";
