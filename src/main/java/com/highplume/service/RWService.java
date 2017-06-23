@@ -794,7 +794,15 @@ select get_avg('1');
 
         Role role = em.createNamedQuery(Role.FIND_BY_NAME, Role.class).setParameter("name", msgChunk[8]).getSingleResult();
 
-        Member member = new Member(msgChunk[0],msgChunk[1],msgChunk[2],corpID,         			//msgChunk0=nameFirst,1=nameMiddle,2=nameLast,3=corpID
+        CorpUserPK corpUserPK = new CorpUserPK(corpID, uidLC);
+        Member member = em.find(Member.class, corpUserPK);
+
+        if (member != null){
+            log("FAIL: UserID already registered",1);
+            return ("FAIL: UserID already registered");
+        }
+
+        member = new Member(msgChunk[0],msgChunk[1],msgChunk[2],corpID,         			//msgChunk0=nameFirst,1=nameMiddle,2=nameLast,3=corpID
             uidLC,hashChunk[Encryption.PBKDF2_INDEX],hashLopped,msgChunk[6],msgChunk[7],role.getId(), 	//UID,PWD,seed,6=email,7=departmentID,roleID
             active, activationCode);																		//active(bool), activationCode
         em.persist(member);
@@ -810,16 +818,16 @@ select get_avg('1');
 		return "SUCCESS";
 
     } catch (EntityExistsException pe) {
-        log("addmember: Duplicate Record: " + pe.getMessage());
+        log("addmember: EntityExistsException: Duplicate Record: " + pe.getMessage());
         return  "Duplicate Record: " + pe.getMessage();
     } catch (PersistenceException pe) {
-        log("addmember: " + pe.getMessage());
+        log("addmember: PersistenceException: " + pe.getMessage());
         return  "Error: " + pe.getMessage();
     } catch (Encryption.CannotPerformOperationException ex) {
-        log("addmember: Encryption Failure" + ex.getMessage());
+        log("addmember: CannotPerformOperationException: Encryption Failure" + ex.getMessage());
         return "Encryption Failure";
     } catch (Exception e) {
-        log("addmember: " + e.getMessage());
+        log("addmember: Exception: " + e.getMessage());
         return  "General Error: " + e.getMessage();
     }
   }
