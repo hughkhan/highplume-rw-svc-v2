@@ -989,8 +989,8 @@ select get_avg('1');
     public String changeUserDept(String message) {
     String[] msgChunk = message.split(","); //0=corpID,1=userToken,2=ID,3=toDept
         String  corpID  	= msgChunk[0],
-                ID      	= msgChunk[1],
-                userToken   = msgChunk[2],
+                userToken   = msgChunk[1],
+                ID      	= msgChunk[2],
                 toDept  	= msgChunk[3];
 
 		if (!validUserAndLevel(corpID, userToken, null,"301"))
