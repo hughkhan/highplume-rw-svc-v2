@@ -1302,6 +1302,39 @@ select get_avg('1');
         }
   }
 
+   /*--------------------------*/
+
+    @POST
+    @Path("submitfeedback")
+    @Consumes(MediaType.TEXT_PLAIN)
+    @Produces(MediaType.TEXT_PLAIN)
+    public String submitFeedback(String message) {
+    String[] msgChunk = message.split("\\|"); //0=corpID,1=userToken,2=type,3=category,4=text
+        String  corpID  	= msgChunk[0],
+                userToken   = msgChunk[1],
+                type      	= msgChunk[2],
+                cat      	= msgChunk[3],
+                info      	= msgChunk[4];
+        Calendar calendar = Calendar.getInstance();
+        java.util.Date now = calendar.getTime();	                    //get a java.util.Date from the calendar instance. this date will represent the current instant, or "now".
+
+		if (!validUserAndLevel(corpID, userToken, null,"401"))
+			return "ERROR:  Not Authorized";
+
+        try{
+            Feedback feedback = new Feedback(corpID, type, cat, info, now);
+            em.persist(feedback);
+
+            return "SUCCESS";
+        } catch  (PersistenceException pe){
+            log("validateemail: " + pe.getMessage());
+            return "ERROR: " + pe.getMessage();
+        } catch (Exception e){
+            log("validateemail: " + e.getMessage());
+            return "ERROR: " + e.getMessage();
+        }
+    }
+
     /*--------------------------*/
 
   public boolean validUserAndLevel(String CorpID, String userTokenBase64, String userID, String minLevel) {  //userID='id' in member table
