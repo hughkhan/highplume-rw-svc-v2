@@ -597,6 +597,7 @@ select get_avg('1');
 				String newProfileName = msgChunk[3];                    //New profile name
 				TUComposite tuc = new TUComposite(corpID, newProfileName, false);
 				em.persist(tuc);
+				em.flush();
 			}
 			else if (param.equalsIgnoreCase("delete")){
 				String profileIdToDelete = msgChunk[3];                 //id of the profile to delete
@@ -649,6 +650,7 @@ select get_avg('1');
 
 					tu.setRatio(Math.round(Float.parseFloat(msgChunk[4])));         //3=ratio to be updated.  Only allow ratio to be updated
 					em.persist(tu);
+					em.flush();
 				}
 				else
 					return "ERROR:BAD_QUALITYTYPEID";
@@ -673,11 +675,13 @@ select get_avg('1');
                     TUType tuTypeGeneral = em.createNamedQuery(TUType.FIND_GENERAL,TUType.class).getSingleResult();
                     TU tuGeneral = new TU(profileId, tuTypeGeneral.getId(), 0);
                     em.persist(tuGeneral);
+                    em.flush();
                 }
 
                 //Now add the quality the admin chose
                 TU tuNew = new TU(profileId, qualityTypeId, Math.round(Float.parseFloat(msgChunk[5])));    //4=ratio
 				em.persist(tuNew);
+				em.flush();
 			}
 			else if (param.equalsIgnoreCase("delete")){
 
@@ -806,6 +810,7 @@ select get_avg('1');
             uidLC,hashChunk[Encryption.PBKDF2_INDEX],hashLopped,msgChunk[6],msgChunk[7],role.getId(), 	//UID,PWD,seed,6=email,7=departmentID,roleID
             active, activationCode);																		//active(bool), activationCode
         em.persist(member);
+        em.flush();
 
         if (!active){
             String retStr = sendMailTLS(msgChunk[4]+","+msgChunk[0]+" "+msgChunk[2]+","+_getCorpNameFromID(corpID)+","+activationCode+","+"Not Testing");
@@ -877,6 +882,7 @@ select get_avg('1');
                     member.setnameLast(msgChunk[6]);
                     member.setEmail(msgChunk[7]);
                     em.persist(member);
+                    em.flush();
                     return "SUCCESS";
                 }
             }
@@ -930,6 +936,7 @@ select get_avg('1');
             member.setPWD(hashChunk[Encryption.PBKDF2_INDEX]);
             member.setHash(hashLopped);
             em.persist(member);
+            em.flush();
 
             byte[] encodedPWD = Base64.getEncoder().encode(hashChunk[Encryption.PBKDF2_INDEX].getBytes());
             return "SUCCESS:"+(new String(encodedPWD));
@@ -969,6 +976,7 @@ select get_avg('1');
                 member.setActive(true);
 
             em.persist(member);
+            em.flush();
 
         } catch (PersistenceException pe) {
             log("inactivateuser: " + pe.getMessage());
@@ -1010,6 +1018,7 @@ select get_avg('1');
 
             member.setDepartmentID(deptList.get(deptIdx).getId());
             em.persist(member);
+            em.flush();
 
         } catch (PersistenceException pe) {
             log("changeuserdept: " + pe.getMessage());
@@ -1043,6 +1052,8 @@ select get_avg('1');
 
                 DeptCorp department = new DeptCorp(deptName, corpID);
                 em.persist(department);
+                em.flush();
+
             }else if (operation.equalsIgnoreCase("delete")){
                 String deptID = msgChunk[3];
                 if ((deptID == null || deptID.isEmpty())) return "FAIL:BLANK_FIELD";
@@ -1063,6 +1074,7 @@ select get_avg('1');
                 DeptCorp departmentToRename = em.find(DeptCorp.class, deptID);
                 departmentToRename.setDeptName(deptName);
                 em.persist(departmentToRename);
+                em.flush();
             }
 
         } catch (PersistenceException pe) {
@@ -1173,7 +1185,7 @@ select get_avg('1');
     }
   }
 
-    /*----------------------*/
+/*    *//*----------------------*//*
 
   @GET
   @Path("validateemail")
@@ -1201,14 +1213,14 @@ select get_avg('1');
         else
             return "FAIL";
 
-/*        //Assemble full hash from secureCode.  secureCode is the last 5 chars from encrypted pwd(":hash" portion).  PWD field in the member table
+*//*        //Assemble full hash from secureCode.  secureCode is the last 5 chars from encrypted pwd(":hash" portion).  PWD field in the member table
         String encryptedPWD = loggingMember.getHash()                                                 //algorithm:iterations:hashSize:salt
                               +":"
                               +loggingMember.getPWD().substring(0,loggingMember.getPWD().length()-5)  //encrypted pwd minus last 5 chars
                               +secureCode;                                                            //last 5 chars of encrypted pwd
 
         if (!Encryption.verifyPassword(encryptedPWD, loggingMember.getHash()+":"+loggingMember.getPWD()))  //algorithm:iterations:hashSize:salt:hash (hash is the encrypted pwd)
-            return "FAIL"+encryptedPWD;*/
+            return "FAIL"+encryptedPWD;*//*
 
     } catch (NoResultException pe) {
         log("validateemail: NO RESULT: " + pe.getMessage());
@@ -1220,7 +1232,7 @@ select get_avg('1');
         log("validateemail: " + e.getMessage());
         return "ERROR: " + e.getMessage();
     }
-  }
+  }*/
 
   /*-----------------------------------------*/
 
@@ -1322,8 +1334,9 @@ select get_avg('1');
 			return "ERROR:  Not Authorized";
 
         try{
-            Feedback feedback = new Feedback(corpID, type, cat, info, now);
+            Feedback feedback = new Feedback(corpID, type, cat, info, now, _getUserIDfromUserToken(userToken));
             em.persist(feedback);
+            em.flush();
 
             return "SUCCESS";
         } catch  (PersistenceException pe){
@@ -1442,6 +1455,33 @@ select get_avg('1');
             return "ERROR: " + pe.getMessage();
     } catch (Exception e){
             log("_getCorpNameFromID: " + e.getMessage());
+            return "ERROR: " + e.getMessage();
+    }
+  }
+
+
+
+
+
+    /*--------------------------*/
+
+  public String _getUserIDfromUserToken(String userTokenBase64){
+
+	try{
+        byte[] decodedPWD = Base64.getDecoder().decode(userTokenBase64.getBytes());
+        String userToken = new String(decodedPWD); log("_getUserIDfromUserToken:userToken: " + userToken,1);
+
+		Member member = em.createNamedQuery(Member.FIND_BY_PWD, Member.class).setParameter("pwd",userToken).getSingleResult();
+		return member.getUserID();
+
+	} catch (NoResultException pe) {
+            log("_getUserIDfromUserToken: NO RESULT: " + pe.getMessage());
+            return "ERROR: NO RESULT";
+    } catch  (PersistenceException pe){
+            log("_getUserIDfromUserToken: " + pe.getMessage());
+            return "ERROR: " + pe.getMessage();
+    } catch (Exception e){
+            log("_getUserIDfromUserToken: " + e.getMessage());
             return "ERROR: " + e.getMessage();
     }
   }
