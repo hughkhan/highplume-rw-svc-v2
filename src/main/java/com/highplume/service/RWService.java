@@ -372,6 +372,18 @@ select get_avg('1');
         em.persist(completion);
         tuTypeIdList.add(completion.getId());
 
+        TUType systemsThinking  = new TUType("Systems Thinking", "Think holistically");
+        em.persist(systemsThinking);
+        tuTypeIdList.add(systemsThinking.getId());
+
+        TUType customerValue  = new TUType("Customer Value", "Customer focused");
+        em.persist(customerValue);
+        tuTypeIdList.add(customerValue.getId());
+
+        TUType efficient  = new TUType("Efficient", "Do more with less");
+        em.persist(efficient);
+        tuTypeIdList.add(efficient.getId());
+
         //TUComposite
         TUComposite nike1 = new TUComposite("1", "Nike", true);
         em.persist(nike1);
@@ -420,13 +432,13 @@ select get_avg('1');
     Random rand = new Random();
 
       //Add Corporations
-      Corp corp1 = new Corp("Sierra Club", "http://www.sierraclub.org/");
+      Corp corp1 = new Corp("1","Sierra Club", "http://www.sierraclub.org/");
       em.persist(corp1);
 
-      Corp corp2 = new Corp("Google, Inc.", "http://www.google.org/");
+      Corp corp2 = new Corp("2","Google, Inc.", "http://www.google.org/");
       em.persist(corp2);
 
-      Corp corp3 = new Corp("Washington Post", "http://www.washingtonpost.org/");
+      Corp corp3 = new Corp("3","Washington Post", "http://www.washingtonpost.org/");
       em.persist(corp3);
 
 	  //Add departments to one of the corporations
@@ -476,7 +488,7 @@ select get_avg('1');
       em.persist(user);
 
       String fullHash=""; //encrypt supplied password into this format -> algorithm:iterations:hashSize:salt:hash
-      String[] hashChunk = new String[5] ;  //[algorithm][iterations][hashSize][salt][hash]
+      String[] hashChunk = new String[Encryption.HASH_SECTIONS] ;  //[algorithm][iterations][hashSize][salt][hash]
       String hashLopped=""; //remove the hashed password (hash) from the end -> algorithm:iterations:hashSize:salt
       String vcode="";
 
@@ -560,7 +572,7 @@ select get_avg('1');
       starGiven.setGivenDate(now);
       starGiven.setGivingMemberID(Integer.toString(rand.nextInt(memberCount) + 8 + 1)); //auto generate id (assuming sequential from 1-max) +8 for sequence counter increase from above
       starGiven.setReceivingMemberID(Integer.toString(rand.nextInt(memberCount) + 8 + 1)); //auto generate id (designed to work only when starting from empty db)
-      starGiven.setTuTypeID(tuTypeIdList.get(rand.nextInt(48)));
+      starGiven.setTuTypeID(tuTypeIdList.get(rand.nextInt(51)));
       em.merge(starGiven);
       em.flush();
     }
@@ -787,7 +799,7 @@ select get_avg('1');
 
     try{
         String fullHash, hashLopped, activationCode = "";
-        String[] hashChunk = new String[5];
+        String[] hashChunk = new String[Encryption.HASH_SECTIONS];
 
         do{ 																//Loop until no query parameter messy characters are in the activationCode
             fullHash = Encryption.createHash(msgChunk[5]); 					//encrypt supplied password into this format -> algorithm:iterations:hashSize:salt:hash
@@ -927,7 +939,7 @@ select get_avg('1');
                 return "FAIL:  Old password did not match";
 
             String fullHash, hashLopped, activationCode = "";
-            String[] hashChunk = new String[5];
+            String[] hashChunk = new String[Encryption.HASH_SECTIONS];
 
             fullHash = Encryption.createHash(newPwd); 					        //encrypt supplied password into this format -> algorithm:iterations:hashSize:salt:hash
             hashChunk = fullHash.split(":");  							    //[algorithm][iterations][hashSize][salt][hash]
@@ -1037,18 +1049,22 @@ select get_avg('1');
     @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.TEXT_PLAIN)
     public String deptAdmin(String message) {
-    String[] msgChunk = message.split(","); //0=corpID,1=userToken,2=deptID/deptName,3=deptName(optional)
+    String[] msgChunk = message.split(","); //0=corpID,1=userToken,2=operation,3=deptID/deptName,4=deptName(optional)
         String  corpID      = msgChunk[0],
                 userToken   = msgChunk[1],
                 operation   = msgChunk[2];
 
 		if (!validUserAndLevel(corpID, userToken, null,"201"))
-			return "ERROR:  Not Authorized";				
+			return "ERROR: Not Authorized";
 
         try{
             if (operation.equalsIgnoreCase("add")){
                 String deptName = msgChunk[3];
-                if ((deptName == null || deptName.isEmpty())) return "FAIL:BLANK_FIELD";
+                if ((deptName == null || deptName.isEmpty()))
+                    return "FAIL: BLANK_FIELD";
+                else if (deptName.equalsIgnoreCase("General")){
+                    return "FAIL: CANNOT_MODIFY_GENERAL";
+                }
 
                 DeptCorp department = new DeptCorp(deptName, corpID);
                 em.persist(department);
@@ -1056,7 +1072,7 @@ select get_avg('1');
 
             }else if (operation.equalsIgnoreCase("delete")){
                 String deptID = msgChunk[3];
-                if ((deptID == null || deptID.isEmpty())) return "FAIL:BLANK_FIELD";
+                if ((deptID == null || deptID.isEmpty())) return "FAIL: BLANK_FIELD";
 
                 String queryStr = "select count(id) from member where departmentid = '" + deptID + "'";
                 int memberCount = ((Number)em.createNativeQuery(queryStr).getSingleResult()).intValue();
@@ -1065,6 +1081,9 @@ select get_avg('1');
                 }
                 else{
                     DeptCorp departmentToDelete = em.find(DeptCorp.class, deptID);
+                    if (departmentToDelete.getDeptName().equalsIgnoreCase("General")){
+                        return "FAIL: CANNOT_MODIFY_GENERAL";
+                    }
                     em.remove(departmentToDelete);
                 }
             }else if (operation.equalsIgnoreCase("rename")){
@@ -1075,14 +1094,17 @@ select get_avg('1');
                 departmentToRename.setDeptName(deptName);
                 em.persist(departmentToRename);
                 em.flush();
+            } else {
+                log("ERROR: deptadmin: Unknown operation.");
+                return "ERROR: deptadmin: Unknown operation. Please report error. Thank you.";
             }
 
         } catch (PersistenceException pe) {
             log("deptadmin: " + pe.getMessage());
-            return "FAIL: " + pe.getMessage();
+            return "ERROR: " + pe.getMessage();
         } catch (Exception e){
             log("deptadmin: " + e.getMessage());
-            return "Error: " + e.getMessage();
+            return "ERROR: " + e.getMessage();
         }
         return "SUCCESS";
     }
@@ -1336,6 +1358,59 @@ select get_avg('1');
         try{
             Feedback feedback = new Feedback(corpID, type, cat, info, now, _getUserIDfromUserToken(userToken));
             em.persist(feedback);
+            em.flush();
+
+            return "SUCCESS";
+        } catch  (PersistenceException pe){
+            log("validateemail: " + pe.getMessage());
+            return "ERROR: " + pe.getMessage();
+        } catch (Exception e){
+            log("validateemail: " + e.getMessage());
+            return "ERROR: " + e.getMessage();
+        }
+    }
+
+
+   /*--------------------------*/
+
+    @POST
+    @Path("corporation")
+    @Consumes(MediaType.TEXT_PLAIN)
+    @Produces(MediaType.TEXT_PLAIN)
+    public String corporation(String message) {
+    String[] msgChunk = message.split("\\|"); //0=corpID,1=userToken,2=operation,3=name/id
+        String  corpID  	= msgChunk[0],
+                userToken   = msgChunk[1],
+                operation 	= msgChunk[2];
+
+        Calendar calendar = Calendar.getInstance();
+        java.util.Date now = calendar.getTime();	                    //get a java.util.Date from the calendar instance. this date will represent the current instant, or "now".
+
+		if (!validUserAndLevel(corpID, userToken, null,"401"))
+			return "ERROR:  Not Authorized";
+
+        String fullHash, hashLopped = "";
+
+        try{
+            if (operation.equalsIgnoreCase("add")){
+                String corpName = msgChunk[3];
+                String corpWebsite = msgChunk[4];
+                String[] hashChunk = new String[Encryption.HASH_SECTIONS];
+
+                fullHash = Encryption.createHash(corpName); 					//encrypt supplied password into this format -> algorithm:iterations:hashSize:salt:hash
+                hashChunk = fullHash.split(":");  								//[algorithm][iterations][hashSize][salt][hash]
+                hashLopped = fullHash.substring(0,fullHash.lastIndexOf(':')); 	//remove the hashed password (hash) from the end -> algorithm:iterations:hashSize:salt
+                String newCorpID = hashChunk[Encryption.HASH_SECTIONS-1];
+
+                Corp corp = new Corp(newCorpID,corpName, corpWebsite);
+                em.persist(corp);
+                em.flush();
+
+                DeptCorp deptCorp = new DeptCorp("General", corp.getId());
+
+            }
+
+
             em.flush();
 
             return "SUCCESS";
