@@ -697,7 +697,7 @@ select get_avg('1');
 			}
 			else if (param.equalsIgnoreCase("delete")){
 
-				TU tu = em.find(TU.class, msgChunk[3]);                 //2=TU ID which is the primary key
+				TU tu = em.find(TU.class, msgChunk[3]);                 //3=TU ID which is the primary key
 
 				if (tu != null){
 				    TUType tutype = em.find(TUType.class, tu.getTutypeId());
@@ -786,7 +786,7 @@ select get_avg('1');
   @Produces(MediaType.TEXT_PLAIN)
   public String addMember(String message) {
     String csvSplitBy = ",";
-    String[] msgChunk = message.split(csvSplitBy);      //0=nameFirst,1=nameMiddle,2=nameLast,3=corpID,4=uid,5=pwd,6=email,7=dept,8=role,9=active,10=userToken(optional)
+    String[] msgChunk = message.split(csvSplitBy);      //0=nameFirst,1=nameMiddle,2=nameLast,3=corpID,4=uid,5=pwd,6=email,7=dept,8=role,9=active,10=userToken(optional if 9=active)
     String uidLC = msgChunk[4].toLowerCase();           //store uid in lowercase
     boolean active = msgChunk[9].equals("ACTIVE");      //if ACTIVE then userToken is passed.  From Admin Container
     String corpID = msgChunk[3];
@@ -1378,38 +1378,149 @@ select get_avg('1');
     @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.TEXT_PLAIN)
     public String corporation(String message) {
-    String[] msgChunk = message.split("\\|"); //0=corpID,1=userToken,2=operation,3=corpname/id to add,4=website
-        String  corpID  	= msgChunk[0],
-                userToken   = msgChunk[1],
+    String[] msgChunk = message.split("\\|");  //0=iAdmincorpID,1=iAdminuserToken,2=add,3=corpname to add,4=website, 5=allowedurls,
+        String  iaCorpID  	= msgChunk[0],          //0=iAdmincorpID,1=iAdminuserToken,2=addcorpadmin,3=nameFirst,4=nameMiddle,5=nameLast,6=corpID,7=userID,8=email,
+                iaUserToken   = msgChunk[1],
                 operation 	= msgChunk[2];
 
         Calendar calendar = Calendar.getInstance();
-        java.util.Date now = calendar.getTime();	                    //get a java.util.Date from the calendar instance. this date will represent the current instant, or "now".
+        java.util.Date now = calendar.getTime();	                                    //get a java.util.Date from the calendar instance. this date will represent the current instant, or "now".
 
-		if (!validUserAndLevel(corpID, userToken, null,"101"))
+		if (!validUserAndLevel(iaCorpID, iaUserToken, null,"101"))
 			return "ERROR:  Not Authorized";
-
-        String fullHash, hashLopped = "";
 
         try{
             if (operation.equalsIgnoreCase("add")){
                 String corpName = msgChunk[3];
                 String corpWebsite = msgChunk[4];
                 String[] hashChunk = new String[Encryption.HASH_SECTIONS];
+
+                try{
+                    Corp corp = em.createNamedQuery(Corp.FIND_BY_WEBSITE, Corp.class).setParameter("website",corpWebsite).getSingleResult();
+                    return "ERROR: DUPLICATE_CORP";
+                } catch  (NoResultException e){
+                    //continue
+                } catch (NonUniqueResultException e){
+                    return "ERROR: DUPLICATE_CORP";
+                }
+
 log (corpName);
-                fullHash = Encryption.createHash(corpName); 					//encrypt supplied password into this format -> algorithm:iterations:hashSize:salt:hash
+                String fullHash = Encryption.createHash(corpName); 					                    //encrypt supplied password into this format -> algorithm:iterations:hashSize:salt:hash
 log (fullHash);				
-                hashChunk = fullHash.split(":");  								//[algorithm][iterations][hashSize][salt][hash]
+                hashChunk = fullHash.split(":");  								                //[algorithm][iterations][hashSize][salt][hash]
 log (hashChunk[Encryption.HASH_SECTIONS-1]);
 				//                hashLopped = fullHash.substring(0,fullHash.lastIndexOf(':')); 	//remove the hashed password (hash) from the end -> algorithm:iterations:hashSize:salt
 				String newCorpIDbase64 = new String(Base64.getEncoder().encode(hashChunk[Encryption.HASH_SECTIONS-1].getBytes()));
 log (newCorpIDbase64);
-                Corp corp = new Corp(newCorpIDbase64.substring(0,25), corpName, corpWebsite);
+                newCorpIDbase64 = newCorpIDbase64.substring(0,25);                                  //db field is varchar(25)
+log (newCorpIDbase64);
+                Corp corp = new Corp(newCorpIDbase64, corpName, corpWebsite);
                 em.persist(corp);
+//                em.flush();
+log ("after corp");
+                DeptCorp deptCorp = new DeptCorp("General", newCorpIDbase64);
+                em.persist(deptCorp);
+log ("after deptcorp");
+
+                CorpAllowedURLs allowedURLs = new CorpAllowedURLs(newCorpIDbase64, msgChunk[5]);
+                em.persist(allowedURLs);
+log ("after allowedurls");
+
+                TUComposite tuComposite = new TUComposite(newCorpIDbase64,"Zappos", true);
+                em.persist(tuComposite);
+                em.flush();                                                                         //need auto generated compositeID from the database
+log ("after tucomposite");
+
+//		Member member = em.createNamedQuery(Member.FIND_BY_PWD, Member.class).setParameter("pwd",userToken).getSingleResult();
+
+                String tuTypeID = em.createNamedQuery(TUType.FIND_BY_NAME, TUType.class).setParameter("tutypename","Flexibility").getSingleResult().getId();
+log ("after tutypeid");
+                TU tuLocal, tuDB;
+                tuLocal = new TU(tuComposite.getId(),tuTypeID, 10);
+                tuDB = em.merge(tuLocal);
                 em.flush();
 
-//                DeptCorp deptCorp = new DeptCorp("General", corp.getId());
+                tuTypeID = em.createNamedQuery(TUType.FIND_BY_NAME, TUType.class).setParameter("tutypename","Humor").getSingleResult().getId();
+                tuLocal = new TU(tuComposite.getId(),tuTypeID, 10);
+                tuDB = em.merge(tuLocal);
+                em.flush();
 
+                tuTypeID = em.createNamedQuery(TUType.FIND_BY_NAME, TUType.class).setParameter("tutypename","Open-mindedness").getSingleResult().getId();
+                tuLocal = new TU(tuComposite.getId(),tuTypeID, 10);
+                tuDB = em.merge(tuLocal);
+                em.flush();
+
+                tuTypeID = em.createNamedQuery(TUType.FIND_BY_NAME, TUType.class).setParameter("tutypename","Innovation").getSingleResult().getId();
+                tuLocal = new TU(tuComposite.getId(),tuTypeID, 10);
+                tuDB = em.merge(tuLocal);
+                em.flush();
+
+                tuTypeID = em.createNamedQuery(TUType.FIND_BY_NAME, TUType.class).setParameter("tutypename","Curiosity").getSingleResult().getId();
+                tuLocal = new TU(tuComposite.getId(),tuTypeID, 10);
+                tuDB = em.merge(tuLocal);
+                em.flush();
+
+                tuTypeID = em.createNamedQuery(TUType.FIND_BY_NAME, TUType.class).setParameter("tutypename","Openness").getSingleResult().getId();
+                tuLocal = new TU(tuComposite.getId(),tuTypeID, 10);
+                tuDB = em.merge(tuLocal);
+                em.flush();
+
+                tuTypeID = em.createNamedQuery(TUType.FIND_BY_NAME, TUType.class).setParameter("tutypename","Positivity").getSingleResult().getId();
+                tuLocal = new TU(tuComposite.getId(),tuTypeID, 10);
+                tuDB = em.merge(tuLocal);
+                em.flush();
+
+                tuTypeID = em.createNamedQuery(TUType.FIND_BY_NAME, TUType.class).setParameter("tutypename","Efficient").getSingleResult().getId();
+                tuLocal = new TU(tuComposite.getId(),tuTypeID, 10);
+                tuDB = em.merge(tuLocal);
+                em.flush();
+
+                tuTypeID = em.createNamedQuery(TUType.FIND_BY_NAME, TUType.class).setParameter("tutypename","Tenacity").getSingleResult().getId();
+                tuLocal = new TU(tuComposite.getId(),tuTypeID, 10);
+                tuDB = em.merge(tuLocal);
+                em.flush();
+
+                tuTypeID = em.createNamedQuery(TUType.FIND_BY_NAME, TUType.class).setParameter("tutypename","Humility").getSingleResult().getId();
+                tuLocal = new TU(tuComposite.getId(),tuTypeID, 10);
+                tuDB = em.merge(tuLocal);
+                em.flush();
+
+                tuTypeID = em.createNamedQuery(TUType.FIND_BY_NAME, TUType.class).setParameter("tutypename","General").getSingleResult().getId();
+                tuLocal = new TU(tuComposite.getId(),tuTypeID, 0);
+                tuDB = em.merge(tuLocal);
+                em.flush();
+
+log ("after tu");
+
+            }
+            else if (operation.equalsIgnoreCase("addcorpadmin")){
+
+                String[] hashChunk = new String[Encryption.HASH_SECTIONS];
+
+                String fullHash = Encryption.createHash(msgChunk[3]+msgChunk[5]+"501");  //encrypt password into this format -> algorithm:iterations:hashSize:salt:hash
+                hashChunk = fullHash.split(":");  								             //[algorithm][iterations][hashSize][salt][hash]
+                String hashLopped = fullHash.substring(0,fullHash.lastIndexOf(':')); 	     //remove the hashed password (hash) from the end -> algorithm:iterations:hashSize:salt
+log ("fullhash "+fullHash);
+                String roleID = em.createNamedQuery(Role.FIND_BY_NAME, Role.class).setParameter("name", "CORP-ADMIN").getSingleResult().getId();
+log ("roleid "+roleID);
+                String uidLC = msgChunk[7].toLowerCase();
+                CorpUserPK corpUserPK = new CorpUserPK(msgChunk[6], uidLC);
+                Member member = em.find(Member.class, corpUserPK);
+                if (member != null){
+                    log("corporation: FAIL: UserID " + msgChunk[7] + " already registered",1);
+                    return ("FAIL: UserID already registered");
+                }
+
+                String deptID = em.createNamedQuery(DeptCorp.FIND_BY_NAME_CORPID, DeptCorp.class)
+                                    .setParameter("deptname","General").setParameter("corpid", msgChunk[6])
+                                    .getSingleResult().getId();
+log ("deptid "+deptID);
+                member = new Member(msgChunk[3], msgChunk[4], msgChunk[5], msgChunk[6],         			//0=nameFirst,1=nameMiddle,2=nameLast,3=corpID
+                                    uidLC, hashChunk[Encryption.PBKDF2_INDEX], hashLopped, msgChunk[8], 	//4=UID,5=PWD,6=seed,7=email,
+                                    deptID, roleID, true, null);					        //8=departmentID,9=roleID,10=active(bool),11=activationCode
+                em.persist(member);
+                em.flush();
+log ("after member");
             }
 
             return "SUCCESS";
