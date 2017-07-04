@@ -1,3 +1,19 @@
+del "Corp.java"
+del "CorpAllowedURLs.java"
+del "CorpUserPK.java"
+del "DeptCorp.java"
+del "IdUserNameValue.java"
+del "Member.java"
+del "Members.java"
+del "Role.java"
+del "StarGiven.java"
+del "TU.java"
+del "TUComposite.java"
+del "TUType.java"
+del "Feedback.java"
+
+
+
 mklink /H "Corp.java" "../../../../../../../highplume-ro-svc-v2/src/main/java/com/highplume/service/Corp.java"
 mklink /H "CorpAllowedURLs.java" "../../../../../../../highplume-ro-svc-v2/src/main/java/com/highplume/service/CorpAllowedURLs.java"
 mklink /H "CorpUserPK.java" "../../../../../../../highplume-ro-svc-v2/src/main/java/com/highplume/service/CorpUserPK.java"
@@ -11,3 +27,20 @@ mklink /H "TU.java" "../../../../../../../highplume-ro-svc-v2/src/main/java/com/
 mklink /H "TUComposite.java" "../../../../../../../highplume-ro-svc-v2/src/main/java/com/highplume/service/TUComposite.java"
 mklink /H "TUType.java" "../../../../../../../highplume-ro-svc-v2/src/main/java/com/highplume/service/TUType.java"
 mklink /H "Feedback.java" "../../../../../../../highplume-ro-svc-v2/src/main/java/com/highplume/service/Feedback.java"
+
+
+
+
+fsutil hardlink list "Corp.java"
+fsutil hardlink list "CorpAllowedURLs.java"
+fsutil hardlink list "CorpUserPK.java"
+fsutil hardlink list "DeptCorp.java"
+fsutil hardlink list "IdUserNameValue.java"
+fsutil hardlink list "Member.java"
+fsutil hardlink list "Members.java"
+fsutil hardlink list "Role.java"
+fsutil hardlink list "StarGiven.java"
+fsutil hardlink list "TU.java"
+fsutil hardlink list "TUComposite.java"
+fsutil hardlink list "TUType.java"
+fsutil hardlink list "Feedback.java"

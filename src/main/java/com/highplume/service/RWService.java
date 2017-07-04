@@ -1362,10 +1362,10 @@ select get_avg('1');
 
             return "SUCCESS";
         } catch  (PersistenceException pe){
-            log("validateemail: " + pe.getMessage());
+            log("submitfeedback: " + pe.getMessage());
             return "ERROR: " + pe.getMessage();
         } catch (Exception e){
-            log("validateemail: " + e.getMessage());
+            log("submitfeedback: " + e.getMessage());
             return "ERROR: " + e.getMessage();
         }
     }
@@ -1378,7 +1378,7 @@ select get_avg('1');
     @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.TEXT_PLAIN)
     public String corporation(String message) {
-    String[] msgChunk = message.split("\\|"); //0=corpID,1=userToken,2=operation,3=name/id
+    String[] msgChunk = message.split("\\|"); //0=corpID,1=userToken,2=operation,3=corpname/id to add,4=website
         String  corpID  	= msgChunk[0],
                 userToken   = msgChunk[1],
                 operation 	= msgChunk[2];
@@ -1386,7 +1386,7 @@ select get_avg('1');
         Calendar calendar = Calendar.getInstance();
         java.util.Date now = calendar.getTime();	                    //get a java.util.Date from the calendar instance. this date will represent the current instant, or "now".
 
-		if (!validUserAndLevel(corpID, userToken, null,"401"))
+		if (!validUserAndLevel(corpID, userToken, null,"101"))
 			return "ERROR:  Not Authorized";
 
         String fullHash, hashLopped = "";
@@ -1396,29 +1396,28 @@ select get_avg('1');
                 String corpName = msgChunk[3];
                 String corpWebsite = msgChunk[4];
                 String[] hashChunk = new String[Encryption.HASH_SECTIONS];
-
+log (corpName);
                 fullHash = Encryption.createHash(corpName); 					//encrypt supplied password into this format -> algorithm:iterations:hashSize:salt:hash
+log (fullHash);				
                 hashChunk = fullHash.split(":");  								//[algorithm][iterations][hashSize][salt][hash]
-                hashLopped = fullHash.substring(0,fullHash.lastIndexOf(':')); 	//remove the hashed password (hash) from the end -> algorithm:iterations:hashSize:salt
-                String newCorpID = hashChunk[Encryption.HASH_SECTIONS-1];
-
-                Corp corp = new Corp(newCorpID,corpName, corpWebsite);
+log (hashChunk[Encryption.HASH_SECTIONS-1]);
+				//                hashLopped = fullHash.substring(0,fullHash.lastIndexOf(':')); 	//remove the hashed password (hash) from the end -> algorithm:iterations:hashSize:salt
+				String newCorpIDbase64 = new String(Base64.getEncoder().encode(hashChunk[Encryption.HASH_SECTIONS-1].getBytes()));
+log (newCorpIDbase64);
+                Corp corp = new Corp(newCorpIDbase64.substring(0,25), corpName, corpWebsite);
                 em.persist(corp);
                 em.flush();
 
-                DeptCorp deptCorp = new DeptCorp("General", corp.getId());
+//                DeptCorp deptCorp = new DeptCorp("General", corp.getId());
 
             }
 
-
-            em.flush();
-
             return "SUCCESS";
         } catch  (PersistenceException pe){
-            log("validateemail: " + pe.getMessage());
+            log("corporation: " + pe.getMessage());
             return "ERROR: " + pe.getMessage();
         } catch (Exception e){
-            log("validateemail: " + e.getMessage());
+            log("corporation: " + e.getMessage());
             return "ERROR: " + e.getMessage();
         }
     }
