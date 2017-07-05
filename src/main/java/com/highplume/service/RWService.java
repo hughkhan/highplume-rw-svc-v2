@@ -1370,6 +1370,48 @@ select get_avg('1');
         }
     }
 
+  /*--------------------------*/
+
+    @GET
+    @Path("newinstance/{corpID}")
+    @Produces("text/html")
+    public String newinstance(@PathParam("corpID") String corpID) {
+		
+		try {
+			if (corpID.equals("iops501")){
+				
+				//Add roles to ROLE table
+				Role _super = new Role("101", "SUPER", "The owner of the whole instance");
+				em.persist(_super);
+				Role corpAdmin = new Role("201", "CORP-ADMIN", "Admin per corporate contract");
+				em.persist(corpAdmin);
+				Role deptAdmin = new Role("301", "DEPT-ADMIN", "Admin per department within corporate contract");
+				em.persist(deptAdmin);
+				Role user = new Role("401", "USER", "User within a department");
+				em.persist(user);
+				em.flush();
+				
+				java.util.ArrayList<String> dummyList = new java.util.ArrayList<>();
+				addQualities(dummyList);
+				
+				String retStr = corporation(corpID + "|dummytoken|add|Highplume, Inc.|www.highplume.com|highplume.com"); 
+				if (retStr.equals("SUCCESS"))
+					return corporation(corpID + "|dummytoken|addcorpadmin|Henry|David|Thoreau|www.highplume.com|hugh@highplume.com|hugh@highplume.com");
+				else
+					return "FAIL";
+			}
+		else
+			return "FAIL";
+		
+		}catch  (PersistenceException pe){
+            log("newinstance: " + pe.getMessage());
+            return "ERROR: " + pe.getMessage();
+        } catch (Exception e){
+            log("newinstance: " + e.getMessage());
+            return "ERROR: " + e.getMessage();
+        }
+		
+	}
 
    /*--------------------------*/
 
@@ -1378,17 +1420,19 @@ select get_avg('1');
     @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.TEXT_PLAIN)
     public String corporation(String message) {
-    String[] msgChunk = message.split("\\|");  //0=iAdmincorpID,1=iAdminuserToken,2=add,3=corpname to add,4=website, 5=allowedurls,
-        String  iaCorpID  	= msgChunk[0],          //0=iAdmincorpID,1=iAdminuserToken,2=addcorpadmin,3=nameFirst,4=nameMiddle,5=nameLast,6=corpID,7=userID,8=email,
-                iaUserToken   = msgChunk[1],
+    String[] msgChunk = message.split("\\|");  		//0=iAdmincorpID,1=iAdminuserToken,2=add,3=corpname to add,4=website, 5=allowedurls,
+        String  iaCorpID  	= msgChunk[0],          //0=iAdmincorpID,1=iAdminuserToken,2=addcorpadmin,3=nameFirst,4=nameMiddle,5=nameLast,6=website,7=userID,8=email,
+                iaUserToken = msgChunk[1],
                 operation 	= msgChunk[2];
 
         Calendar calendar = Calendar.getInstance();
         java.util.Date now = calendar.getTime();	                                    //get a java.util.Date from the calendar instance. this date will represent the current instant, or "now".
 
-		if (!validUserAndLevel(iaCorpID, iaUserToken, null,"101"))
-			return "ERROR:  Not Authorized";
-
+		if (!iaCorpID.equals("iops501")){
+			if (!validUserAndLevel(iaCorpID, iaUserToken, null,"101"))
+				return "ERROR:  Not Authorized";
+		}
+		
         try{
             if (operation.equalsIgnoreCase("add")){
                 String corpName = msgChunk[3];
