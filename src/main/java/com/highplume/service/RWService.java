@@ -1397,44 +1397,32 @@ select get_avg('1');
 
                 try{
                     Corp corp = em.createNamedQuery(Corp.FIND_BY_WEBSITE, Corp.class).setParameter("website",corpWebsite).getSingleResult();
-                    return "ERROR: DUPLICATE_CORP";
+                    return "FAIL: DUPLICATE_CORP";
                 } catch  (NoResultException e){
                     //continue
                 } catch (NonUniqueResultException e){
-                    return "ERROR: DUPLICATE_CORP";
+                    return "FAIL: DUPLICATE_CORP";
                 }
 
-log (corpName);
                 String fullHash = Encryption.createHash(corpName); 					                    //encrypt supplied password into this format -> algorithm:iterations:hashSize:salt:hash
-log (fullHash);				
                 hashChunk = fullHash.split(":");  								                //[algorithm][iterations][hashSize][salt][hash]
-log (hashChunk[Encryption.HASH_SECTIONS-1]);
-				//                hashLopped = fullHash.substring(0,fullHash.lastIndexOf(':')); 	//remove the hashed password (hash) from the end -> algorithm:iterations:hashSize:salt
 				String newCorpIDbase64 = new String(Base64.getEncoder().encode(hashChunk[Encryption.HASH_SECTIONS-1].getBytes()));
-log (newCorpIDbase64);
                 newCorpIDbase64 = newCorpIDbase64.substring(0,25);                                  //db field is varchar(25)
-log (newCorpIDbase64);
                 Corp corp = new Corp(newCorpIDbase64, corpName, corpWebsite);
                 em.persist(corp);
-//                em.flush();
-log ("after corp");
+
                 DeptCorp deptCorp = new DeptCorp("General", newCorpIDbase64);
                 em.persist(deptCorp);
-log ("after deptcorp");
 
                 CorpAllowedURLs allowedURLs = new CorpAllowedURLs(newCorpIDbase64, msgChunk[5]);
                 em.persist(allowedURLs);
-log ("after allowedurls");
 
                 TUComposite tuComposite = new TUComposite(newCorpIDbase64,"Zappos", true);
                 em.persist(tuComposite);
                 em.flush();                                                                         //need auto generated compositeID from the database
-log ("after tucomposite");
-
-//		Member member = em.createNamedQuery(Member.FIND_BY_PWD, Member.class).setParameter("pwd",userToken).getSingleResult();
 
                 String tuTypeID = em.createNamedQuery(TUType.FIND_BY_NAME, TUType.class).setParameter("tutypename","Flexibility").getSingleResult().getId();
-log ("after tutypeid");
+
                 TU tuLocal, tuDB;
                 tuLocal = new TU(tuComposite.getId(),tuTypeID, 10);
                 tuDB = em.merge(tuLocal);
@@ -1489,9 +1477,6 @@ log ("after tutypeid");
                 tuLocal = new TU(tuComposite.getId(),tuTypeID, 0);
                 tuDB = em.merge(tuLocal);
                 em.flush();
-
-log ("after tu");
-
             }
             else if (operation.equalsIgnoreCase("addcorpadmin")){
 
@@ -1503,19 +1488,22 @@ log ("after tu");
 log ("fullhash "+fullHash);
                 String roleID = em.createNamedQuery(Role.FIND_BY_NAME, Role.class).setParameter("name", "CORP-ADMIN").getSingleResult().getId();
 log ("roleid "+roleID);
+
+
+                String newCorpID = em.createNamedQuery(Corp.FIND_BY_WEBSITE, Corp.class).setParameter("website",msgChunk[6]).getSingleResult().getId();
                 String uidLC = msgChunk[7].toLowerCase();
-                CorpUserPK corpUserPK = new CorpUserPK(msgChunk[6], uidLC);
+                CorpUserPK corpUserPK = new CorpUserPK(newCorpID, uidLC);
                 Member member = em.find(Member.class, corpUserPK);
                 if (member != null){
                     log("corporation: FAIL: UserID " + msgChunk[7] + " already registered",1);
-                    return ("FAIL: UserID already registered");
+                    return ("FAIL: DUPLICATE_USER");
                 }
 
                 String deptID = em.createNamedQuery(DeptCorp.FIND_BY_NAME_CORPID, DeptCorp.class)
-                                    .setParameter("deptname","General").setParameter("corpid", msgChunk[6])
+                                    .setParameter("deptname","General").setParameter("corpid", newCorpID)
                                     .getSingleResult().getId();
 log ("deptid "+deptID);
-                member = new Member(msgChunk[3], msgChunk[4], msgChunk[5], msgChunk[6],         			//0=nameFirst,1=nameMiddle,2=nameLast,3=corpID
+                member = new Member(msgChunk[3], msgChunk[4], msgChunk[5], newCorpID,         			//0=nameFirst,1=nameMiddle,2=nameLast,3=corpID
                                     uidLC, hashChunk[Encryption.PBKDF2_INDEX], hashLopped, msgChunk[8], 	//4=UID,5=PWD,6=seed,7=email,
                                     deptID, roleID, true, null);					        //8=departmentID,9=roleID,10=active(bool),11=activationCode
                 em.persist(member);
