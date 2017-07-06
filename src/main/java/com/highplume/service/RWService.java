@@ -1116,12 +1116,12 @@ select get_avg('1');
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.TEXT_PLAIN)
     public String loginMember(String message) {
-        String csvSplitBy = ",";
+        String csvSplitBy = "\\|";
         String[] msgChunk = message.split(csvSplitBy); //msgChunk[0]=uid, msgChunk[1]=pwd
+
         try{
 //            TypedQuery<Member> query = em.createNamedQuery(Member.FIND_BY_UID, Member.class).setParameter("uid",msgChunk[0].toLowerCase());
             TypedQuery<Member> query = em.createNamedQuery(Member.FIND_BY_UID, Member.class).setHint(QueryHints.CACHE_USAGE, CacheUsage.DoNotCheckCache).setParameter("uid",msgChunk[0].toLowerCase());
-
             Member loggingMember = query.getSingleResult();
 
             if (!loggingMember.getActive())
@@ -1140,19 +1140,19 @@ select get_avg('1');
 
             byte[] encodedPWD = Base64.getEncoder().encode(loggingMember.getPWD().getBytes());
 
-            return "SUCCESS"+","+loggingMember.getId()+
-                             ","+loggingMember.getUserID()+
-                             ","+loggingMember.getnameFirst()+
-                             ","+loggingMember.getnameMiddle()+
-                             ","+loggingMember.getnameLast()+
-                             ","+role.getName()+
-                             ","+loggingMember.getDepartmentID()+
-                             ","+deptcorp.getDeptName()+
-                             ","+corp.getId()+
-                             ","+corp.getName()+
-//                             ","+role.getId()+
-//							 ","+loggingMember.getPWD()+
-                             ","+(new String(encodedPWD));
+            return "SUCCESS"+"|"+loggingMember.getId()+
+                             "|"+loggingMember.getUserID()+
+                             "|"+loggingMember.getnameFirst()+
+                             "|"+loggingMember.getnameMiddle()+
+                             "|"+loggingMember.getnameLast()+
+                             "|"+role.getName()+
+                             "|"+loggingMember.getDepartmentID()+
+                             "|"+deptcorp.getDeptName()+
+                             "|"+corp.getId()+
+                             "|"+corp.getName()+
+//                             "|"+role.getId()+
+//							 "|"+loggingMember.getPWD()+
+                             "|"+(new String(encodedPWD));
 
 
         } catch (NoResultException pe) {
