@@ -172,7 +172,7 @@ select get_avg('1');
 
 
         //TUType
-        TUType general = new TUType("General", "General Awesomeness");
+        TUType general = new TUType("Great Employee", "General Awesomeness");
         em.persist(general);
         tuTypeIdList.add(general.getId());
 
@@ -657,7 +657,7 @@ select get_avg('1');
 				if (tu != null){
 				    TUType tutype = em.find(TUType.class, tu.getTutypeId());
 
-				    if (tutype.getName().equalsIgnoreCase("General"))
+				    if (tutype.getName().equalsIgnoreCase("Great Employee"))
 				        return "ERROR:CANNOT_MODIFY_GENERAL";
 
 					tu.setRatio(Math.round(Float.parseFloat(msgChunk[4])));         //3=ratio to be updated.  Only allow ratio to be updated
@@ -671,16 +671,16 @@ select get_avg('1');
 				String profileId = msgChunk[3];                                                         //2=Associated profile ID
 				String qualityTypeId = msgChunk[4];                                                     //3=Associated quality ID
 
-                //if chose "General" from the quality list
+                //if chose "Great Employee" from the quality list
                 TUType tutype = em.find(TUType.class, qualityTypeId);
                 if (tutype != null){
-    			    if (tutype.getName().equalsIgnoreCase("General"))
+    			    if (tutype.getName().equalsIgnoreCase("Great Employee"))
 	    		        return "ERROR:CANNOT_MODIFY_GENERAL";
                 }
                 else
                     return "ERROR:BAD_QUALITYTYPEID";
 
-                //See if zero qualities in the profile.  If so then add "General" by default
+                //See if zero qualities in the profile.  If so then add "Great Employee" by default
                 List<Object[]> tus = em.createNamedQuery(TU.FIND_ALL_BY_TUCOMPOSITEID_JOIN).setParameter("tucompositeid", profileId).getResultList();
 
                 if (tus.size() == 0){
@@ -702,7 +702,7 @@ select get_avg('1');
 				if (tu != null){
 				    TUType tutype = em.find(TUType.class, tu.getTutypeId());
 
-				    if (tutype.getName().equalsIgnoreCase("General"))
+				    if (tutype.getName().equalsIgnoreCase("Great Employee"))
 				        return "ERROR:CANNOT_MOD_GENERAL";
 
 					em.remove(tu);
@@ -1517,7 +1517,7 @@ select get_avg('1');
                 tuDB = em.merge(tuLocal);
                 em.flush();
 
-                tuTypeID = em.createNamedQuery(TUType.FIND_BY_NAME, TUType.class).setParameter("tutypename","General").getSingleResult().getId();
+                tuTypeID = em.createNamedQuery(TUType.FIND_BY_NAME, TUType.class).setParameter("tutypename","Great Employee").getSingleResult().getId();
                 tuLocal = new TU(tuComposite.getId(),tuTypeID, 0);
                 tuDB = em.merge(tuLocal);
                 em.flush();
