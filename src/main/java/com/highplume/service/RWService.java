@@ -68,7 +68,14 @@ public class RWService {
 
     /*-----------------------------*/
 
-	
+
+
+/*
+    Commands:
+    http://192.168.100.169:8080/rw-service/highplume/newinstance/iops501
+    http://192.168.100.169:8080/rw-service/highplume/initdb2/SzFya0p0OHpNUWkxK0QvL3hZN/cXE3eXlIc05oM1pKWlNsTzhJSWk0Wm9p/www.highplume.com
+     */
+
 /*
 -------Case insensitive index--------------
 
@@ -128,22 +135,22 @@ select get_avg('1');
 //        String path = ROService.class.getProtectionDomain().getCodeSource().getLocation().getPath();
 		File f1 = new File("."); 				// f is the current directory; where the JVM was launched  => C:\Users\Latitude Owner\Documents\payara41\glassfish\domains\domain1\config\.
 		String path = f1.getAbsolutePath();
-        String decodedPath = "";
+        String csvFile = "";
         try{
-            decodedPath = URLDecoder.decode(path, "UTF-8");
+            csvFile = URLDecoder.decode(path, "UTF-8");
         }catch (UnsupportedEncodingException e){
              e.printStackTrace();
         } 
 
-		decodedPath = decodedPath.substring(0, decodedPath.indexOf("config")) + "logs\\";
+		csvFile = csvFile.substring(0, csvFile.indexOf("config")) + "logs\\";
 		
-        File f = new File(decodedPath+logTrigger);				//if logTrigger file exists, log everything.  Otherwise only log level 0 stuff.
+        File f = new File(csvFile+logTrigger);				//if logTrigger file exists, log everything.  Otherwise only log level 0 stuff.
         if(f.exists() || logLevel == 0) {
             Calendar calendar = Calendar.getInstance();
             java.util.Date now = calendar.getTime();
 
-            try (BufferedWriter bw = new BufferedWriter(new FileWriter(decodedPath+logFile, true))) {
-                bw.write(decodedPath+"---"+now.toString() + ":" + output);
+            try (BufferedWriter bw = new BufferedWriter(new FileWriter(csvFile+logFile, true))) {
+                bw.write(csvFile+"---"+now.toString() + ":" + output);
                 bw.newLine();
             } catch (IOException e) {
                 e.printStackTrace();
@@ -409,6 +416,151 @@ select get_avg('1');
 
 
     /*-------------------*/
+
+
+
+  @GET
+  @Path("initdb2/{corpID}/{userToken}/{corpWebsite}")
+  @Produces("text/html")
+  public String initDB2(@PathParam("corpID") String corpID, @PathParam("userToken") String userToken, @PathParam("corpWebsite") String corpWebsite) {
+
+  	if (!validUserAndLevel(corpID, userToken, null,"101"))
+		return "ERROR: Unauthorized";
+
+    File f1 = new File("."); 				// f is the current directory; where the JVM was launched  => C:\Users\Latitude Owner\Documents\payara41\glassfish\domains\domain1\config\.
+    String path = f1.getAbsolutePath();
+    String csvFile = "";
+    try{
+        csvFile = URLDecoder.decode(path, "UTF-8");
+    }catch (UnsupportedEncodingException e){
+         e.printStackTrace();
+    }
+
+    csvFile = csvFile.substring(0, csvFile.length()-1);     //remove the dot from the end
+    csvFile += "users.csv";
+    log (csvFile);
+
+    String line;
+    String csvSplitBy = ",";
+    int i=0;
+    Member member = new Member(), mergedMember = new Member();
+
+    java.util.ArrayList<String> tuTypeIdList = new java.util.ArrayList <>(); //hold tutypes to randomly assign to starsgiven
+    List<TUType> TUTypes = em.createNamedQuery(TUType.FIND_ALL, TUType.class).getResultList();
+    for (TUType tuType: TUTypes){
+        tuTypeIdList.add(tuType.getId());
+    }
+
+    String deptId[] = new String[6];
+    Random rand = new Random();
+
+    Corp corp1;
+    try{
+        corp1 = em.createNamedQuery(Corp.FIND_BY_WEBSITE, Corp.class).setParameter("website",corpWebsite).getSingleResult();
+        if (corp1 == null) return "Website " + corpWebsite + " not found.";
+    } catch  (NoResultException e){
+        return "Website " + corpWebsite + " not found.";
+    }
+
+	  //Add departments to one of the corporations
+      DeptCorp deptCorp1 = new DeptCorp("Marketing", corp1.getId());
+      em.persist(deptCorp1);
+      deptId[0] = deptCorp1.getId();
+      em.flush();
+
+      DeptCorp deptCorp = new DeptCorp("Sales", corp1.getId());
+      DeptCorp dc = em.merge(deptCorp);
+      em.flush();
+      deptId[1] = dc.getId();
+      deptCorp.setCorpID(corp1.getId()); deptCorp.setDeptName("Engineering");
+      dc = em.merge(deptCorp);
+      deptId[2] = dc.getId();
+      em.flush();
+      deptCorp.setCorpID(corp1.getId()); deptCorp.setDeptName("Finance & Accounting");
+      dc = em.merge(deptCorp);
+      em.flush();
+      deptId[3] = dc.getId();
+      deptCorp.setCorpID(corp1.getId()); deptCorp.setDeptName("Customer Service");
+      dc = em.merge(deptCorp);
+      em.flush();
+      deptId[4] = dc.getId();
+
+      deptCorp.setCorpID(corp1.getId()); deptCorp.setDeptName("Professional Services");
+      dc = em.merge(deptCorp);
+      em.flush();
+      deptId[5] = dc.getId();
+
+      Role user = em.createNamedQuery(Role.FIND_BY_NAME, Role.class).setParameter("name","USER").getSingleResult();
+
+      String fullHash=""; //encrypt supplied password into this format -> algorithm:iterations:hashSize:salt:hash
+      String[] hashChunk = new String[Encryption.HASH_SECTIONS] ;  //[algorithm][iterations][hashSize][salt][hash]
+      String hashLopped=""; //remove the hashed password (hash) from the end -> algorithm:iterations:hashSize:salt
+      String vcode="";
+
+      try (BufferedReader br = new BufferedReader(new FileReader(csvFile))) {
+              Random randDeptIdx = new Random();
+          while ((line = br.readLine()) != null) {
+            String[] memberInfo = line.split(csvSplitBy);
+
+            member.setnameFirst(memberInfo[0]);
+            member.setnameMiddle(memberInfo[1]);
+            member.setnameLast(memberInfo[2]);
+            member.setUserID("test"+Integer.toString(rand.nextInt(1000000))+"@yahoo.com");
+            member.setCorpID(corp1.getId());
+            do{
+                try {fullHash = Encryption.createHash("passpass");} catch (Encryption.CannotPerformOperationException e){return e.getMessage();};
+                hashChunk = fullHash.split(":");
+                hashLopped = fullHash.substring(0,fullHash.lastIndexOf(':'));
+                vcode = hashChunk[Encryption.PBKDF2_INDEX].substring(hashChunk[Encryption.PBKDF2_INDEX].length()-5);
+            }while (vcode.contains("+") || vcode.contains("/"));
+
+            member.setPWD(hashChunk[Encryption.PBKDF2_INDEX]);
+            member.setHash(hashLopped);
+            member.setEmail("test@test.com");
+            member.setDepartmentID(deptId[randDeptIdx.nextInt(5)]);
+            member.setRoleID(user.getId());
+            member.setActive(true);
+            mergedMember = em.merge(member);
+			em.persist(mergedMember);
+            em.flush();
+			em.clear();
+            i++;
+          }
+
+            addQualities(tuTypeIdList);
+
+      } catch (PersistenceException pe) {
+        log("initdb2: " + pe.getMessage());
+        return "<html lang=\"en\"><body><h1>  ERROR:  " + pe.getMessage() + "  </h1></body></html>";
+      } catch (IOException e) {
+        log("initdb2: " + e.getMessage());
+		return "<html lang=\"en\"><body><h1>  ERROR:  " + e.getMessage() + "  </h1></body></html>";
+      }
+
+// *** Add stars given sample data using random number generator.  Expects member ID to be sequential from 1 to max member count
+    int memberCount = ((Number)em.createNamedQuery(Member.COUNT).getSingleResult()).intValue();
+
+    Calendar calendar = Calendar.getInstance();
+    java.util.Date now = calendar.getTime();
+    StarGiven starGiven = new StarGiven();
+
+    for (i=0; i < 1000; i++)
+    {
+      starGiven.setGivenDate(now);
+      starGiven.setGivingMemberID(Integer.toString(rand.nextInt(memberCount) + 8 + 1)); //auto generate id (assuming sequential from 1-max) +8 for sequence counter increase from above
+      starGiven.setReceivingMemberID(Integer.toString(rand.nextInt(memberCount) + 8 + 1)); //auto generate id (designed to work only when starting from empty db)
+      starGiven.setTuTypeID(tuTypeIdList.get(rand.nextInt(51)));
+      em.merge(starGiven);
+      em.flush();
+    }
+
+    return "<html lang=\"en\"><body><h5>"+hashChunk[Encryption.PBKDF2_INDEX]+"--"+
+            hashChunk[Encryption.PBKDF2_INDEX].substring(hashChunk[Encryption.PBKDF2_INDEX].length()-5)
+            +"---"+ Integer.toString(i) + " Database Records Added. Total number of members = " + memberCount +"</h5></body></html>";
+  }
+
+    /*-------------------*/
+
 
 
   @GET
