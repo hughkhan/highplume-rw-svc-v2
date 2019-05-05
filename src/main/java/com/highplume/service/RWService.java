@@ -72,7 +72,7 @@ public class RWService {
 
 /*
     Commands:
-    http://192.168.100.169:8080/rw-service/highplume/newinstance/iops501
+    http://192.168.100.169:8080/rw-service/highplume/newinstance/iops501  //update db to give corp-admin super access
     http://192.168.100.169:8080/rw-service/highplume/initdb2/SzFya0p0OHpNUWkxK0QvL3hZN/cXE3eXlIc05oM1pKWlNsTzhJSWk0Wm9p/www.highplume.com
      */
 
